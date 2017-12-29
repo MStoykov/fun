@@ -7,14 +7,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dop251/otto"
-	"github.com/ry/v8worker"
+	"github.com/dop251/goja_nodejs/console"
+
+	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/require"
+	"github.com/robertkrimen/otto"
 )
 
 func main() {
 	benchmarkOttoParallel()
-	benchmarkV8WorkerParallel()
-	benchmarkGolangParallel()
+	benchmarkGojaParallel()
+	// benchmarkGolangParallel()
+
+	octaneBenchmark()
 }
 
 func octaneBenchmark() {
@@ -41,8 +46,8 @@ func octaneBenchmark() {
 		// "octane-benchmark/zlib-data.js",
 		// "octane-benchmark/zlib.js",
 	}
-	benchmarkV8Worker(benchmarks)
 	benchmarkOtto(benchmarks)
+	benchmarkGoja(benchmarks)
 }
 
 func mustReadFile(source string) string {
@@ -72,16 +77,17 @@ func benchmarkOtto(benchmarks []string) {
 	vm.Run(script)
 }
 
-func benchmarkV8Worker(benchmarks []string) {
-	log.Println("benchmark v8Worker\n")
-	worker := v8worker.New(func(msg string) {
-		log.Printf("message: %s \n", msg)
-	}, nil)
+func benchmarkGoja(benchmarks []string) {
+	log.Println("benchmark goja\n")
+	vm := goja.New()
+	new(require.Registry).Enable(vm)
+	console.Enable(vm)
+
 	for _, source := range benchmarks {
-		worker.Load(source, mustReadFile(source))
+		vm.RunScript(source, mustReadFile(source))
 	}
-	source := "benchmark_v8.js"
-	worker.Load(source, mustReadFile(source))
+	source := "benchmark_otto.js"
+	vm.RunScript(source, mustReadFile(source))
 }
 
 func benchmarkOttoParallel() {
@@ -107,31 +113,27 @@ func benchmarkOttoParallel() {
 	fmt.Println("otto parallel thread :", time.Now().Sub(now))
 }
 
-func benchmarkV8WorkerParallel() {
-	fmt.Println("v8 parallel test")
+func benchmarkGojaParallel() {
+	fmt.Println("goja parallel test")
 	var wg sync.WaitGroup
 	now := time.Now()
+
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
 		go func() {
-			worker := v8worker.New(func(msg string) {
-				log.Printf("message: %s \n", msg)
-			}, nil)
+			vm := goja.New()
 			source := `
-	$recv(function(msg) {
 		var sum = 0;
 		for(var i = 0 ; i < 10000000 ; i++){
 			sum++;
 		}
-    });
 	`
-			worker.Load("test", source)
-			worker.Send("test")
+			vm.RunScript("summ", source)
 			wg.Done()
 		}()
 	}
 	wg.Wait()
-	fmt.Println("v8 parallel thread :", time.Now().Sub(now))
+	fmt.Println("goja parallel thread :", time.Now().Sub(now))
 }
 
 func benchmarkGolangParallel() {
