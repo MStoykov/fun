@@ -7,7 +7,7 @@ function AddResult(name, result) {
 }
 
 function AddError(name, error) {
-  // console.log("error: " + name + ": " + error.message);
+  console.log("error: " + name + ": " + error.message);
 }
 
 function AddScore(score) {
@@ -18,9 +18,9 @@ BenchmarkSuite.config.doWarmup = undefined;
 BenchmarkSuite.config.doDeterministic = undefined;
 
 BenchmarkSuite.RunSuites({
-  NotifyStart : ShowBox,
-  NotifyError : AddError,
-  NotifyResult : AddResult,
-  NotifyScore : AddScore
+  NotifyStart: ShowBox,
+  NotifyError: AddError,
+  NotifyResult: AddResult,
+  NotifyScore: AddScore
 },
-[]);
+  []);
